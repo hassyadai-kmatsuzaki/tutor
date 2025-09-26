@@ -46,6 +46,21 @@ class PropertyMatchController extends Controller
             $query->notPresented();
         }
 
+        // 物件名・顧客名 検索
+        if ($request->filled('property_name')) {
+            $name = $request->get('property_name');
+            $query->whereHas('property', function ($q) use ($name) {
+                $q->where('property_name', 'like', "%{$name}%");
+            });
+        }
+
+        if ($request->filled('customer_name')) {
+            $name = $request->get('customer_name');
+            $query->whereHas('customer', function ($q) use ($name) {
+                $q->where('customer_name', 'like', "%{$name}%");
+            });
+        }
+
         // ソート
         $sortBy = $request->get('sort_by', 'match_score');
         $sortOrder = $request->get('sort_order', 'desc');
