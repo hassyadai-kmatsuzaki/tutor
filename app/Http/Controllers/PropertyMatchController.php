@@ -10,6 +10,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
+use App\Jobs\GenerateMatchesJob;
 
 class PropertyMatchController extends Controller
 {
@@ -124,48 +125,19 @@ class PropertyMatchController extends Controller
             $customerQuery->where('id', $request->customer_id);
         }
 
-        $properties = $propertyQuery->get();
-        $customers = $customerQuery->get();
+        $minScore = (int)$request->get('min_score', 60);
 
-        $minScore = $request->get('min_score', 60);
-        $createdMatches = 0;
-
-        DB::transaction(function () use ($properties, $customers, $minScore, &$createdMatches) {
-            foreach ($properties as $property) {
-                foreach ($customers as $customer) {
-                    // 既存のマッチングをチェック
-                    $existingMatch = PropertyMatch::where('property_id', $property->id)
-                        ->where('customer_id', $customer->id)
-                        ->first();
-
-                    if ($existingMatch) {
-                        continue;
-                    }
-
-                    // マッチングスコアを計算
-                    $score = $this->calculateMatchScore($property, $customer);
-
-                    if ($score >= $minScore) {
-                        $match = PropertyMatch::create([
-                            'property_id' => $property->id,
-                            'customer_id' => $customer->id,
-                            'match_score' => $score,
-                            'match_reason' => PropertyMatch::generateMatchReason($property, $customer, $score),
-                            'created_by' => Auth::id(),
-                        ]);
-
-                        // 活動履歴を記録
-                        Activity::logMatchCreated(Auth::id(), $match);
-                        $createdMatches++;
-                    }
-                }
-            }
-        });
+        // 非同期ジョブでキュー投入（レスポンス後に実行）
+        GenerateMatchesJob::dispatchAfterResponse(
+            $request->input('property_id'),
+            $request->input('customer_id'),
+            $minScore,
+            Auth::id()
+        );
 
         return response()->json([
             'success' => true,
-            'message' => "{$createdMatches}件のマッチングを作成しました",
-            'created_matches' => $createdMatches
+            'message' => 'マッチング再計算を受け付けました（バックグラウンド実行）'
         ]);
     }
 
