@@ -572,13 +572,13 @@ class PropertyMatchController extends Controller
     private function calculateDetailedScore(Property $property, Customer $customer): array
     {
         // 予算適合度計算（重み: 30%）
-        $budgetScore = $this->calculateBudgetScore($property->price, $customer->budget_min, $customer->budget_max);
+        $budgetScore = $this->calculateBudgetScore($property->price ?? null, $customer->budget_min, $customer->budget_max);
         
         // エリア適合度計算（重み: 25%）
-        $areaScore = $this->calculateAreaScore($property->prefecture, $customer->area_preference);
+        $areaScore = $this->calculateAreaScore($property->prefecture ?? null, $customer->area_preference);
         
         // 物件タイプ適合度計算（重み: 20%）
-        $typeScore = $this->calculateTypeScore($property->property_type, $customer->property_type_preference);
+        $typeScore = $this->calculateTypeScore($property->property_type ?? null, $customer->property_type_preference ?? null);
         
         // 面積適合度計算（重み: 15%）
         $sizeScore = $this->calculateSizeScore($property->building_area, $customer->area_requirement);
@@ -608,8 +608,9 @@ class PropertyMatchController extends Controller
     /**
      * 予算適合度計算
      */
-    private function calculateBudgetScore(int $price, ?int $budgetMin, ?int $budgetMax): float
+    private function calculateBudgetScore(?int $price, ?int $budgetMin, ?int $budgetMax): float
     {
+        if ($price === null) return 0.5;
         if (!$budgetMin || !$budgetMax) return 0.5;
 
         if ($price <= $budgetMin) return 0.3;
@@ -623,18 +624,20 @@ class PropertyMatchController extends Controller
     /**
      * エリア適合度計算
      */
-    private function calculateAreaScore(string $propertyArea, ?string $customerArea): float
+    private function calculateAreaScore(?string $propertyArea, ?string $customerArea): float
     {
         if (!$customerArea) return 0.5;
+        if (!$propertyArea) return 0.5;
         return $propertyArea === $customerArea ? 1.0 : 0.0;
     }
 
     /**
      * 物件タイプ適合度計算
      */
-    private function calculateTypeScore(string $propertyType, ?string $customerType): float
+    private function calculateTypeScore(?string $propertyType, ?string $customerType): float
     {
         if (!$customerType) return 0.5;
+        if (!$propertyType) return 0.5;
         return $propertyType === $customerType ? 1.0 : 0.0;
     }
 
