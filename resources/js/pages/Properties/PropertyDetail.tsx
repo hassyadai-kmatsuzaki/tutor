@@ -79,16 +79,16 @@ const PropertyDetail: React.FC = () => {
     setShowDeleteDialog(false);
   };
 
-  const formatPrice = (price?: number) => {
-    if (!price) return '-';
+  const formatPrice = (price?: number | null) => {
+    if (price == null) return '-';
     if (price >= 100000000) {
       return `${(price / 100000000).toFixed(1)}億円`;
     }
     return `${(price / 10000).toLocaleString()}万円`;
   };
 
-  const formatArea = (area?: number, unit: string = '㎡') => {
-    if (!area) return '-';
+  const formatArea = (area?: number | null, unit: string = '㎡') => {
+    if (area == null) return '-';
     return `${area.toLocaleString()}${unit}`;
   };
 
@@ -237,11 +237,11 @@ const PropertyDetail: React.FC = () => {
             <Grid container spacing={2}>
               <Grid item xs={6}>
                 <Typography variant="body2" color="textSecondary">都道府県</Typography>
-                <Typography variant="body1">{property.prefecture}</Typography>
+                <Typography variant="body1">{property.prefecture || '-'}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="body2" color="textSecondary">市区町村</Typography>
-                <Typography variant="body1">{property.city}</Typography>
+                <Typography variant="body1">{property.city || '-'}</Typography>
               </Grid>
               <Grid item xs={6}>
                 <Typography variant="body2" color="textSecondary">最寄り駅</Typography>

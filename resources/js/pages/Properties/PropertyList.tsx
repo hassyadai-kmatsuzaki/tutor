@@ -281,19 +281,20 @@ const PropertyList: React.FC = () => {
                   </Typography>
                 </TableCell>
                 <TableCell>
-                  <Chip label={property.property_type} size="small" />
+                  {property.property_type ? (
+                    <Chip label={property.property_type} size="small" />
+                  ) : (
+                    <Typography variant="body2" color="textSecondary">-</Typography>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
-                    {property.prefecture}{property.city}
-                  </Typography>
-                  <Typography variant="caption" color="textSecondary">
-                    {property.address}
+                    {property.address || '-'}
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
                   <Typography variant="body2" fontWeight="medium">
-                    {property.price.toLocaleString()}
+                    {property.price != null ? property.price.toLocaleString() : '-'}
                   </Typography>
                 </TableCell>
                 <TableCell align="right">
@@ -308,11 +309,15 @@ const PropertyList: React.FC = () => {
                   )}
                 </TableCell>
                 <TableCell>
-                  <Chip
-                    label={getStatusLabel(property.status)}
-                    color={getStatusColor(property.status) as any}
-                    size="small"
-                  />
+                  {property.status ? (
+                    <Chip
+                      label={getStatusLabel(property.status)}
+                      color={getStatusColor(property.status) as any}
+                      size="small"
+                    />
+                  ) : (
+                    <Typography variant="body2" color="textSecondary">-</Typography>
+                  )}
                 </TableCell>
                 <TableCell>
                   <Typography variant="body2">
