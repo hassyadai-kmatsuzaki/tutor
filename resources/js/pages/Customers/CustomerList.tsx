@@ -18,6 +18,13 @@ import {
   MenuItem,
   Button,
   Alert,
+  Card,
+  CardContent,
+  CardActions,
+  Divider,
+  Stack,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import { Search, Add, Upload as UploadIcon, Edit as EditIcon } from '@mui/icons-material';
 import { useQuery } from '@tanstack/react-query';
@@ -29,6 +36,8 @@ import CSVImportDialog from '../../components/Common/CSVImportDialog';
 
 const CustomerList: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [customerTypeFilter, setCustomerTypeFilter] = useState('');
@@ -139,16 +148,17 @@ const CustomerList: React.FC = () => {
   }
 
   return (
-    <Box>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">
+    <Box sx={{ px: { xs: 1, sm: 2 } }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', mb: 3, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 2 : 0 }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'}>
           顧客管理
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, width: isMobile ? '100%' : 'auto' }}>
           <Button
             variant="outlined"
             startIcon={<UploadIcon />}
             onClick={() => setShowImportDialog(true)}
+            fullWidth={isMobile}
           >
             CSVインポート
           </Button>
@@ -156,6 +166,7 @@ const CustomerList: React.FC = () => {
             variant="contained" 
             startIcon={<Add />}
             onClick={() => setShowCreateForm(true)}
+            fullWidth={isMobile}
           >
             新規顧客登録
           </Button>
@@ -165,7 +176,7 @@ const CustomerList: React.FC = () => {
       {/* 検索・フィルター */}
       <Paper sx={{ p: 2, mb: 3 }}>
         <Grid container spacing={2}>
-          <Grid item xs={12} md={4}>
+          <Grid item xs={12} sm={6} md={4}>
             <TextField
               fullWidth
               label="顧客名・会社名で検索"
@@ -174,10 +185,11 @@ const CustomerList: React.FC = () => {
               InputProps={{
                 startAdornment: <Search sx={{ mr: 1, color: 'action.active' }} />,
               }}
+              size={isMobile ? 'small' : 'medium'}
             />
           </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
               <InputLabel>ステータス</InputLabel>
               <Select
                 value={statusFilter}
@@ -192,8 +204,8 @@ const CustomerList: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={3}>
-            <FormControl fullWidth>
+          <Grid item xs={12} sm={6} md={3}>
+            <FormControl fullWidth size={isMobile ? 'small' : 'medium'}>
               <InputLabel>顧客種別</InputLabel>
               <Select
                 value={customerTypeFilter}
@@ -206,7 +218,7 @@ const CustomerList: React.FC = () => {
               </Select>
             </FormControl>
           </Grid>
-          <Grid item xs={12} md={2}>
+          <Grid item xs={12} sm={6} md={2}>
             <Button
               fullWidth
               variant="outlined"
@@ -215,7 +227,7 @@ const CustomerList: React.FC = () => {
                 setStatusFilter('');
                 setCustomerTypeFilter('');
               }}
-              sx={{ height: '56px' }}
+              size={isMobile ? 'small' : 'medium'}
             >
               クリア
             </Button>
@@ -223,111 +235,157 @@ const CustomerList: React.FC = () => {
         </Grid>
       </Paper>
 
-      {/* 顧客一覧テーブル */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>顧客名</TableCell>
-              <TableCell>種別</TableCell>
-              <TableCell>ステータス</TableCell>
-              <TableCell>予算</TableCell>
-              <TableCell>希望エリア</TableCell>
-              <TableCell>担当者</TableCell>
-              <TableCell>登録日</TableCell>
-              <TableCell align="center">操作</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {isLoading ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center">
-                  読み込み中...
-                </TableCell>
-              </TableRow>
-                          ) : customersData?.data?.data?.length === 0 ? (
-              <TableRow>
-                <TableCell colSpan={8} align="center">
-                  顧客が見つかりませんでした
-                </TableCell>
-              </TableRow>
-            ) : (
-              customersData?.data?.data?.map((customer: Customer) => (
-                <TableRow 
-                  key={customer.id} 
-                  hover 
-                  onClick={() => navigate(`/customers/${customer.id}`)}
-                  sx={{ cursor: 'pointer' }}
-                >
-                  <TableCell>
-                    <Box>
-                      <Typography variant="body2" fontWeight="medium">
-                        {customer.customer_name}
+      {/* 顧客一覧 */}
+      {isMobile ? (
+        <Box sx={{ mb: 3 }}>
+          {isLoading ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography>読み込み中...</Typography>
+            </Box>
+          ) : customersData?.data?.data?.length === 0 ? (
+            <Box sx={{ textAlign: 'center', py: 4 }}>
+              <Typography>顧客が見つかりませんでした</Typography>
+            </Box>
+          ) : (
+            <Stack spacing={2}>
+              {customersData?.data?.data?.map((customer: Customer) => (
+                <Card key={customer.id} onClick={() => navigate(`/customers/${customer.id}`)} sx={{ cursor: 'pointer' }}>
+                  <CardContent sx={{ pb: 1 }}>
+                    <Typography variant="h6" fontWeight="bold" sx={{ mb: 0.5 }}>
+                      {customer.customer_name}
+                    </Typography>
+                    {customer.customer_type === '法人' && customer.contact_person && (
+                      <Typography variant="caption" color="textSecondary">
+                        担当: {customer.contact_person}
                       </Typography>
-                                              {customer.customer_type === '法人' && customer.contact_person && (
-                        <Typography variant="caption" color="textSecondary">
-                          担当: {customer.contact_person}
-                        </Typography>
-                      )}
+                    )}
+                    <Divider sx={{ my: 1 }} />
+                    <Box sx={{ display: 'flex', flexWrap: 'wrap', gap: 1, alignItems: 'center' }}>
+                      <Chip label={getCustomerTypeLabel(customer.customer_type)} size="small" variant="outlined" />
+                      <Chip label={getStatusLabel(customer.status)} size="small" color={getStatusColor(customer.status) as any} />
                     </Box>
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={getCustomerTypeLabel(customer.customer_type)} 
-                      size="small"
-                      variant="outlined"
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Chip 
-                      label={getStatusLabel(customer.status)} 
-                      size="small"
-                      color={getStatusColor(customer.status) as any}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {formatBudget(customer.budget_min, customer.budget_max)}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {customer.area_preference || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {customer.assigned_user?.name || '-'}
-                    </Typography>
-                  </TableCell>
-                  <TableCell>
-                    <Typography variant="body2">
-                      {new Date(customer.created_at).toLocaleDateString('ja-JP')}
-                    </Typography>
-                  </TableCell>
-                  <TableCell align="center">
-                    <Button
-                      size="small"
-                      startIcon={<EditIcon />}
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setEditingCustomer(customer);
-                      }}
-                    >
+                    <Box sx={{ mt: 1 }}>
+                      <Typography variant="body2">予算: {formatBudget(customer.budget_min, customer.budget_max)}</Typography>
+                      <Typography variant="body2">エリア: {customer.area_preference || '-'}</Typography>
+                      <Typography variant="caption" color="textSecondary">登録: {new Date(customer.created_at).toLocaleDateString('ja-JP')}</Typography>
+                    </Box>
+                  </CardContent>
+                  <CardActions sx={{ pt: 0, px: 2, pb: 2 }}>
+                    <Button size="small" variant="outlined" startIcon={<EditIcon />} onClick={(e) => { e.stopPropagation(); setEditingCustomer(customer); }} fullWidth>
                       編集
                     </Button>
+                  </CardActions>
+                </Card>
+              ))}
+            </Stack>
+          )}
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>顧客名</TableCell>
+                <TableCell>種別</TableCell>
+                <TableCell>ステータス</TableCell>
+                <TableCell>予算</TableCell>
+                <TableCell>希望エリア</TableCell>
+                <TableCell>担当者</TableCell>
+                <TableCell>登録日</TableCell>
+                <TableCell align="center">操作</TableCell>
+              </TableRow>
+            </TableHead>
+            <TableBody>
+              {isLoading ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    読み込み中...
                   </TableCell>
                 </TableRow>
-              ))
-            )}
-          </TableBody>
-        </Table>
-      </TableContainer>
+              ) : customersData?.data?.data?.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={8} align="center">
+                    顧客が見つかりませんでした
+                  </TableCell>
+                </TableRow>
+              ) : (
+                customersData?.data?.data?.map((customer: Customer) => (
+                  <TableRow 
+                    key={customer.id} 
+                    hover 
+                    onClick={() => navigate(`/customers/${customer.id}`)}
+                    sx={{ cursor: 'pointer' }}
+                  >
+                    <TableCell>
+                      <Box>
+                        <Typography variant="body2" fontWeight="medium">
+                          {customer.customer_name}
+                        </Typography>
+                        {customer.customer_type === '法人' && customer.contact_person && (
+                          <Typography variant="caption" color="textSecondary">
+                            担当: {customer.contact_person}
+                          </Typography>
+                        )}
+                      </Box>
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={getCustomerTypeLabel(customer.customer_type)} 
+                        size="small"
+                        variant="outlined"
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Chip 
+                        label={getStatusLabel(customer.status)} 
+                        size="small"
+                        color={getStatusColor(customer.status) as any}
+                      />
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {formatBudget(customer.budget_min, customer.budget_max)}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {customer.area_preference || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {customer.assigned_user?.name || '-'}
+                      </Typography>
+                    </TableCell>
+                    <TableCell>
+                      <Typography variant="body2">
+                        {new Date(customer.created_at).toLocaleDateString('ja-JP')}
+                      </Typography>
+                    </TableCell>
+                    <TableCell align="center">
+                      <Button
+                        size="small"
+                        startIcon={<EditIcon />}
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          setEditingCustomer(customer);
+                        }}
+                      >
+                        編集
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))
+              )}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* 統計情報 */}
       {customersData?.data && (
         <Box sx={{ mt: 2 }}>
-          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 2 : 0 }}>
             <Typography variant="body2" color="textSecondary">
               {customersData.data.from}-{customersData.data.to} / {customersData.data.total}件
             </Typography>
