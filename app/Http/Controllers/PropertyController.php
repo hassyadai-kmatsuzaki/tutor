@@ -344,7 +344,12 @@ class PropertyController extends Controller
                     $row = array_pad($row, count($header), null);
                 }
                 
-                // まだ列数が多い場合はエラーとして記録してスキップ
+                // 列数が多い場合はヘッダー数に切り詰め（末尾余分カラム対策）
+                if (count($row) > count($header)) {
+                    $row = array_slice($row, 0, count($header));
+                }
+
+                // まだ不一致ならエラーとしてスキップ
                 if (count($row) !== count($header)) {
                     $errors[] = "行 " . ($index + 2) . ": ヘッダー列数(" . count($header) . ")とデータ列数(" . count($row) . ")が一致しません";
                     continue;
@@ -359,9 +364,11 @@ class PropertyController extends Controller
                 $rawTxn = $data['取引態様'] ?? ($data['取引区分'] ?? null);
                 $transactionCategory = in_array($rawTxn, Property::TRANSACTION_CATEGORIES, true) ? $rawTxn : null;
                 $address = $data['住所'] ?? null;
+                $rawName = isset($data['物件名']) ? trim((string)$data['物件名']) : null;
+                $propertyName = $rawName !== '' ? $rawName : '物件名み入力';
 
                 $propertyData = [
-                    'property_name' => $data['物件名'] ?? null,
+                    'property_name' => $propertyName,
                     'property_type' => $propertyType,
                     'manager_name' => $data['担当名'] ?? ($data['担当者名'] ?? null),
                     'registration_date' => $this->parseDate($data['登録日'] ?? null),

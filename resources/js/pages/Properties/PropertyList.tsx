@@ -356,9 +356,27 @@ const PropertyList: React.FC = () => {
           <Typography variant="body2" color="textSecondary">
             {data.from}-{data.to} / {data.total}件
           </Typography>
-          <Typography variant="body2" color="textSecondary">
-            ページ {data.current_page} / {data.last_page}
-          </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!data.prev_page_url}
+              onClick={() => setFilters(prev => ({ ...prev, page: Math.max(1, (prev.page || 1) - 1) }))}
+            >
+              前へ
+            </Button>
+            <Typography variant="body2" color="textSecondary">
+              ページ {data.current_page} / {data.last_page}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!data.next_page_url}
+              onClick={() => setFilters(prev => ({ ...prev, page: (prev.page || 1) + 1 }))}
+            >
+              次へ
+            </Button>
+          </Box>
         </Box>
       )}
 
