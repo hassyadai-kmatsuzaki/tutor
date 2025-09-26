@@ -14,21 +14,36 @@ import {
   CustomerFormData,
 } from '../types';
 
+// CSRFトークンを取得
+const getCSRFToken = (): string | null => {
+  const token = document.head.querySelector('meta[name="csrf-token"]');
+  return token ? (token as HTMLMetaElement).content : null;
+};
+
 // Axios インスタンスの作成
 const api = axios.create({
   baseURL: '/api',
   headers: {
     'Content-Type': 'application/json',
     'Accept': 'application/json',
+    'X-Requested-With': 'XMLHttpRequest',
   },
 });
 
 // リクエストインターセプターでトークンを付与
 api.interceptors.request.use((config) => {
-  const token = localStorage.getItem('auth_token');
-  if (token) {
-    config.headers.Authorization = `Bearer ${token}`;
+  // CSRFトークンを設定
+  const csrfToken = getCSRFToken();
+  if (csrfToken) {
+    config.headers['X-CSRF-TOKEN'] = csrfToken;
   }
+
+  // 認証トークンを設定
+  const authToken = localStorage.getItem('auth_token');
+  if (authToken) {
+    config.headers.Authorization = `Bearer ${authToken}`;
+  }
+  
   return config;
 });
 
@@ -45,27 +60,9 @@ api.interceptors.response.use(
   }
 );
 
-// リクエストインターセプター（認証トークンの追加など）
-api.interceptors.request.use((config) => {
-  // 将来的にSanctumトークンを追加
-  // const token = localStorage.getItem('auth_token');
-  // if (token) {
-  //   config.headers.Authorization = `Bearer ${token}`;
-  // }
-  return config;
-});
 
-// レスポンスインターセプター（エラーハンドリング）
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      // 認証エラーの場合の処理
-      // window.location.href = '/login';
-    }
-    return Promise.reject(error);
-  }
-);
+
+
 
 // ダッシュボード API
 export const dashboardApi = {

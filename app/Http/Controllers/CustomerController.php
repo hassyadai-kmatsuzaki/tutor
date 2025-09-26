@@ -382,9 +382,20 @@ class CustomerController extends Controller
         ]);
 
         $file = $request->file('file');
-        $path = $file->getRealPath();
-        $data = array_map('str_getcsv', file($path));
+        
+        // ファイル内容を読み込み、文字コードを自動判定・変換
+        $content = file_get_contents($file->path());
+        $content = $this->convertToUtf8($content);
+        
+        // 変換後の内容を一時ファイルに書き出し
+        $tempFile = tempnam(sys_get_temp_dir(), 'csv_import_');
+        file_put_contents($tempFile, $content);
+        
+        $data = array_map('str_getcsv', file($tempFile));
         $headers = array_shift($data);
+        
+        // 一時ファイルを削除
+        unlink($tempFile);
 
         $results = [
             'success' => 0,
@@ -396,20 +407,23 @@ class CustomerController extends Controller
 
         foreach ($data as $index => $row) {
             try {
-                $rowData = array_combine($headers, $row);
+                $rawData = array_combine($headers, $row);
+                
+                // 新しいCSVフォーマット（買いニーズ）に対応したデータマッピング
+                $customerData = $this->mapCustomerData($rawData);
                 
                 // コードが指定されている場合は更新、そうでなければ新規作成
-                if (!empty($rowData['customer_code'])) {
-                    $customer = Customer::where('customer_code', $rowData['customer_code'])->first();
+                if (!empty($customerData['customer_code'])) {
+                    $customer = Customer::where('customer_code', $customerData['customer_code'])->first();
                     if ($customer) {
-                        $customer->update($rowData);
+                        $customer->update($customerData);
                         $results['updated']++;
                     } else {
-                        Customer::create(array_merge($rowData, ['assigned_user_id' => auth()->id()]));
+                        Customer::create($customerData);
                         $results['created']++;
                     }
                 } else {
-                    Customer::create(array_merge($rowData, ['assigned_user_id' => auth()->id()]));
+                    Customer::create($customerData);
                     $results['created']++;
                 }
                 
@@ -429,5 +443,148 @@ class CustomerController extends Controller
                 'summary' => $results
             ]
         ]);
+    }
+
+    /**
+     * 文字エンコーディングを自動判定
+     */
+    private function detectEncoding($content)
+    {
+        $encodings = ['UTF-8', 'Shift_JIS', 'EUC-JP', 'ISO-2022-JP'];
+        return mb_detect_encoding($content, $encodings, true) ?: 'UTF-8';
+    }
+
+    /**
+     * UTF-8に文字コード変換
+     */
+    private function convertToUtf8($content)
+    {
+        $encoding = $this->detectEncoding($content);
+        if ($encoding !== 'UTF-8') {
+            return mb_convert_encoding($content, 'UTF-8', $encoding);
+        }
+        return $content;
+    }
+
+    /**
+     * 買いニーズCSVデータを顧客データにマッピング
+     */
+    private function mapCustomerData($rawData)
+    {
+        return [
+            'customer_name' => $rawData['買主名'] ?? $rawData['customer_name'] ?? '',
+            'customer_type' => $this->mapCustomerType($rawData['買主属性'] ?? $rawData['customer_type'] ?? ''),
+            'area_preference' => $rawData['エリア'] ?? $rawData['area_preference'] ?? '',
+            'property_type_preference' => $this->mapPropertyTypes($rawData['種目'] ?? $rawData['property_type_preference'] ?? ''),
+            'detailed_requirements' => $rawData['用途'] ?? $rawData['detailed_requirements'] ?? '',
+            'budget_min' => null,
+            'budget_max' => $this->parseBudget($rawData['価格'] ?? $rawData['budget_max'] ?? null),
+            'yield_requirement' => $this->parseNumeric($rawData['利回り'] ?? $rawData['yield_requirement'] ?? null),
+            'contact_person' => $rawData['担当'] ?? $rawData['contact_person'] ?? '',
+            'phone' => $rawData['電話番号'] ?? $rawData['phone'] ?? null,
+            'email' => $rawData['メールアドレス'] ?? $rawData['email'] ?? null,
+            'address' => $rawData['住所'] ?? $rawData['address'] ?? null,
+            'priority' => '中',
+            'status' => 'active',
+            'last_contact_date' => null,
+            'next_contact_date' => null,
+            'assigned_to' => auth()->id(),
+            'remarks' => $rawData['備考'] ?? $rawData['remarks'] ?? null,
+            'customer_code' => $rawData['customer_code'] ?? null,
+        ];
+    }
+
+    /**
+     * 顧客属性をマッピング
+     */
+    private function mapCustomerType($type)
+    {
+        $mapping = [
+            '法人' => '法人',
+            '個人' => '個人',
+            'エンド' => 'エンド法人',
+            'エンド法人' => 'エンド法人',
+            'エンド（中国系）' => 'エンド（中国系）',
+            '中国系' => 'エンド（中国系）',
+            '飲食経営者' => '飲食経営者',
+            '不動明屋' => '不動明屋',
+            '半法商事' => '半法商事',
+        ];
+        
+        return $mapping[$type] ?? '法人';
+    }
+
+    /**
+     * 物件種別をマッピング
+     */
+    private function mapPropertyTypes($types)
+    {
+        if (empty($types)) return '';
+        
+        $mapping = [
+            '店舗' => '店舗',
+            'レジ' => 'レジ', 
+            '土地' => '土地',
+            '事務所' => '事務所',
+            '区分' => '区分',
+            '一棟ビル' => '一棟ビル',
+            '十地' => '十地',
+            '新築ホテル' => '新築ホテル',
+            'ホテル' => '新築ホテル',
+            'オフィス' => 'オフィス',
+            '収益' => 'レジ', // 収益物件はレジに分類
+        ];
+        
+        // 複数の種別が含まれている場合の処理
+        $result = [];
+        foreach ($mapping as $key => $value) {
+            if (strpos($types, $key) !== false) {
+                $result[] = $value;
+            }
+        }
+        
+        return !empty($result) ? implode(',', array_unique($result)) : $types;
+    }
+
+    /**
+     * 予算をパース
+     */
+    private function parseBudget($value)
+    {
+        if (empty($value) || $value === '' || $value === null) return null;
+        
+        // 「万円」「億円」などの単位を処理
+        $value = str_replace(['，', ',', '円'], '', $value);
+        $value = mb_convert_kana($value, 'n');
+        
+        // 億円の場合は万円に変換
+        if (strpos($value, '億') !== false) {
+            $value = str_replace('億', '', $value);
+            if (is_numeric($value)) {
+                return (float)$value * 10000; // 億円を万円に変換
+            }
+        }
+        
+        // 万円の場合
+        if (strpos($value, '万') !== false) {
+            $value = str_replace('万', '', $value);
+        }
+        
+        return is_numeric($value) ? (float)$value : null;
+    }
+
+    /**
+     * 数値をパース
+     */
+    private function parseNumeric($value)
+    {
+        if (empty($value) || $value === '' || $value === null) return null;
+        
+        // パーセント記号を除去
+        $value = str_replace(['%', '％'], '', $value);
+        $value = str_replace(['，', ','], '', $value);
+        $value = mb_convert_kana($value, 'n');
+        
+        return is_numeric($value) ? (float)$value : null;
     }
 } 

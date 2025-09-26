@@ -311,6 +311,12 @@ class PropertyController extends Controller
         $csvData = array_map('str_getcsv', file($tempFile));
         $header = array_shift($csvData);
         
+        // ヘッダー整形（BOM除去・トリム）
+        $header = array_map(function ($h) {
+            $h = $this->removeBom((string)$h);
+            return trim($h);
+        }, $header ?? []);
+        
         // 一時ファイルを削除
         unlink($tempFile);
 
@@ -319,6 +325,31 @@ class PropertyController extends Controller
 
         foreach ($csvData as $index => $row) {
             try {
+                // 空行スキップ
+                if (!is_array($row) || count(array_filter($row, function ($v) { return trim((string)$v) !== ''; })) === 0) {
+                    continue;
+                }
+                
+                // 行のトリム
+                $row = array_map(function ($v) { return is_string($v) ? trim($v) : $v; }, $row);
+                
+                // 末尾の空要素を削る（テンプレ末尾カンマ対策）
+                while (count($row) > 0 && trim((string)end($row)) === '') {
+                    array_pop($row);
+                    if (count($row) <= count($header)) break;
+                }
+                
+                // 列数が足りなければ null でパディング
+                if (count($row) < count($header)) {
+                    $row = array_pad($row, count($header), null);
+                }
+                
+                // まだ列数が多い場合はエラーとして記録してスキップ
+                if (count($row) !== count($header)) {
+                    $errors[] = "行 " . ($index + 2) . ": ヘッダー列数(" . count($header) . ")とデータ列数(" . count($row) . ")が一致しません";
+                    continue;
+                }
+                
                 $data = array_combine($header, $row);
                 
                 // データの変換・検証（新しいCSVフォーマットに対応）
@@ -359,6 +390,17 @@ class PropertyController extends Controller
             'imported' => $imported,
             'errors' => $errors
         ]);
+    }
+
+    /**
+     * BOM除去
+     */
+    private function removeBom(string $text): string
+    {
+        if (str_starts_with($text, "\xEF\xBB\xBF")) {
+            return substr($text, 3);
+        }
+        return $text;
     }
 
     /**

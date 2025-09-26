@@ -14,17 +14,20 @@
         "@mui/material": "^5.15.1",
         "@mui/x-data-grid": "^6.18.2",
         "@mui/x-date-pickers": "^6.18.2",
+        "@tailwindcss/vite": "^4.1.13",
+        "@tanstack/react-query": "^4.36.1",
+        "autoprefixer": "^10.4.21",
         "axios": "^1.11.0",
+        "dayjs": "^1.11.10",
         "react": "^18.2.0",
         "react-dom": "^18.2.0",
         "react-router-dom": "^6.20.1",
-        "@tanstack/react-query": "^4.36.1",
-        "dayjs": "^1.11.10"
+        "tailwindcss": "^4.1.13"
     },
     "devDependencies": {
         "@types/react": "^18.2.43",
         "@types/react-dom": "^18.2.17",
-        "@vitejs/plugin-react": "^4.2.1",
+        "@vitejs/plugin-react": "^4.7.0",
         "concurrently": "^9.0.1",
         "laravel-vite-plugin": "^2.0.0",
         "typescript": "^5.3.3",

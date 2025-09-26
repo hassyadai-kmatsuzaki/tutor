@@ -333,35 +333,29 @@ class PropertyMatchController extends Controller
         $score = 0;
         $totalWeight = 0;
 
-        // 価格マッチ度 (30%)
-        $priceWeight = 30;
-        $priceMatch = $customer->calculatePriceMatch($property);
-        $score += $priceMatch * $priceWeight / 100;
-        $totalWeight += $priceWeight;
+        // 1. 種目マッチ度 (30%)
+        $typeWeight = 30;
+        $typeMatch = $this->calculateTypeMatch($property, $customer);
+        $score += $typeMatch * $typeWeight / 100;
+        $totalWeight += $typeWeight;
 
-        // エリアマッチ度 (25%)
+        // 2. エリアマッチ度 (25%)
         $areaWeight = 25;
         $areaMatch = $this->calculateAreaMatch($property, $customer);
         $score += $areaMatch * $areaWeight / 100;
         $totalWeight += $areaWeight;
 
-        // 種別マッチ度 (20%)
-        $typeWeight = 20;
-        $typeMatch = $this->calculateTypeMatch($property, $customer);
-        $score += $typeMatch * $typeWeight / 100;
-        $totalWeight += $typeWeight;
+        // 3. 坪数（土地面積）マッチ度 (25%)
+        $landAreaWeight = 25;
+        $landAreaMatch = $this->calculateLandAreaMatch($property, $customer);
+        $score += $landAreaMatch * $landAreaWeight / 100;
+        $totalWeight += $landAreaWeight;
 
-        // 利回りマッチ度 (15%)
-        $yieldWeight = 15;
-        $yieldMatch = $this->calculateYieldMatch($property, $customer);
-        $score += $yieldMatch * $yieldWeight / 100;
-        $totalWeight += $yieldWeight;
-
-        // その他条件マッチ度 (10%)
-        $otherWeight = 10;
-        $otherMatch = $this->calculateOtherMatch($property, $customer);
-        $score += $otherMatch * $otherWeight / 100;
-        $totalWeight += $otherWeight;
+        // 4. 価格マッチ度 (20%)
+        $priceWeight = 20;
+        $priceMatch = $customer->calculatePriceMatch($property);
+        $score += $priceMatch * $priceWeight / 100;
+        $totalWeight += $priceWeight;
 
         return round($score, 2);
     }
@@ -418,6 +412,78 @@ class PropertyMatchController extends Controller
         $penaltyRate = min($shortfall / $customer->yield_requirement, 1.0);
         
         return max(0, 100 - ($penaltyRate * 100));
+    }
+
+    /**
+     * 土地面積マッチ度計算
+     */
+    private function calculateLandAreaMatch(Property $property, Customer $customer): float
+    {
+        // 物件の土地面積（㎡）
+        $propertyLandArea = $property->land_area;
+        
+        if (!$propertyLandArea) {
+            return 30.0; // 物件の土地面積が未設定の場合は低スコア
+        }
+        
+        // ㎡を坪に変換 (1坪 = 3.30579㎡)
+        $propertyLandAreaTsubo = $propertyLandArea / 3.30579;
+        
+        // 顧客の希望坪数を取得（備考から抽出または別フィールドから）
+        $customerLandAreaTsubo = $this->extractLandAreaRequirement($customer);
+        
+        if (!$customerLandAreaTsubo) {
+            return 50.0; // 顧客の希望坪数が未設定の場合は中間値
+        }
+        
+        // 希望坪数との差を計算
+        $difference = abs($propertyLandAreaTsubo - $customerLandAreaTsubo);
+        $percentageDiff = $difference / $customerLandAreaTsubo;
+        
+        // マッチ度計算
+        if ($percentageDiff <= 0.1) { // 10%以内の差
+            return 100.0;
+        } elseif ($percentageDiff <= 0.2) { // 20%以内の差
+            return 80.0;
+        } elseif ($percentageDiff <= 0.3) { // 30%以内の差
+            return 60.0;
+        } elseif ($percentageDiff <= 0.5) { // 50%以内の差
+            return 40.0;
+        } else {
+            return 20.0; // 50%を超える差
+        }
+    }
+
+    /**
+     * 顧客の土地面積要求を抽出
+     */
+    private function extractLandAreaRequirement(Customer $customer): ?float
+    {
+        // 備考から坪数を抽出
+        if ($customer->remarks) {
+            // 「100坪」「50坪以上」「30-50坪」などのパターンを検索
+            if (preg_match('/(\d+(?:\.\d+)?)坪/', $customer->remarks, $matches)) {
+                return (float)$matches[1];
+            }
+            
+            if (preg_match('/(\d+(?:\.\d+)?)坪以上/', $customer->remarks, $matches)) {
+                return (float)$matches[1];
+            }
+            
+            if (preg_match('/(\d+(?:\.\d+)?)-(\d+(?:\.\d+)?)坪/', $customer->remarks, $matches)) {
+                // 範囲の場合は平均値を使用
+                return ((float)$matches[1] + (float)$matches[2]) / 2;
+            }
+        }
+        
+        // 詳細要求から抽出
+        if ($customer->detailed_requirements) {
+            if (preg_match('/(\d+(?:\.\d+)?)坪/', $customer->detailed_requirements, $matches)) {
+                return (float)$matches[1];
+            }
+        }
+        
+        return null;
     }
 
     /**

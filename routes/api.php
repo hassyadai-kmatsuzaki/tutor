@@ -9,11 +9,6 @@ use App\Http\Controllers\CustomerController;
 use App\Http\Controllers\PropertyMatchController;
 use App\Http\Controllers\DashboardController;
 
-// 認証不要のルート
-Route::post('/login', [AuthController::class, 'login']);
-Route::post('/logout', [AuthController::class, 'logout'])->middleware('auth:sanctum');
-Route::get('/me', [AuthController::class, 'me'])->middleware('auth:sanctum');
-
 Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
@@ -64,6 +59,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [CustomerController::class, 'store']);
         Route::get('/statistics', [CustomerController::class, 'statistics']);
         Route::get('/by-assignee', [CustomerController::class, 'byAssignee']);
+        Route::post('/import', [CustomerController::class, 'import']);
         
         Route::prefix('{customer}')->group(function () {
             Route::get('/', [CustomerController::class, 'show']);
