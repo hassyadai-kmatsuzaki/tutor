@@ -452,9 +452,14 @@ class CustomerController extends Controller
                 
                 // 新しいCSVフォーマット（買いニーズ）に対応したデータマッピング
                 $customerData = $this->mapCustomerData($rawData);
-                // 顧客名が空の場合はデフォルト文言
+                // 顧客名が空の場合は、仲介会社名→デフォルトの優先で補完
                 if (empty($customerData['customer_name'])) {
-                    $customerData['customer_name'] = '買主名未入力';
+                    $broker = $rawData['仲介会社名'] ?? ($rawData['仲介会社'] ?? null);
+                    if (is_string($broker) && trim($broker) !== '') {
+                        $customerData['customer_name'] = trim($broker);
+                    } else {
+                        $customerData['customer_name'] = '買主名未入力';
+                    }
                 }
                 
                 // コードが指定されている場合は更新、そうでなければ新規作成
@@ -518,7 +523,7 @@ class CustomerController extends Controller
     {
         return [
             'customer_name' => $rawData['買主名'] ?? $rawData['customer_name'] ?? '',
-            'customer_type' => $this->mapCustomerType($rawData['買主属性'] ?? $rawData['customer_type'] ?? ''),
+            'customer_type' => $this->mapCustomerType($rawData['買主属性'] ?? $rawData['customer_type'] ?? '法人'),
             'area_preference' => $rawData['エリア'] ?? $rawData['area_preference'] ?? '',
             'property_type_preference' => $this->mapPropertyTypes($rawData['種目'] ?? $rawData['property_type_preference'] ?? ''),
             'detailed_requirements' => $rawData['用途'] ?? $rawData['detailed_requirements'] ?? '',

@@ -36,11 +36,16 @@ const CustomerList: React.FC = () => {
   const [showImportDialog, setShowImportDialog] = useState(false);
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
 
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
+
   const { data: customersData, isLoading, error } = useQuery({
-    queryKey: ['customers', { status: statusFilter, customer_type: customerTypeFilter }],
+    queryKey: ['customers', { status: statusFilter, customer_type: customerTypeFilter, page, per_page: perPage }],
     queryFn: () => customerApi.getList({
       status: statusFilter || undefined,
       customer_type: customerTypeFilter || undefined,
+      page,
+      per_page: perPage,
     }),
     select: (response) => response.data,
   });
@@ -322,9 +327,32 @@ const CustomerList: React.FC = () => {
       {/* 統計情報 */}
       {customersData?.data && (
         <Box sx={{ mt: 2 }}>
-          <Typography variant="body2" color="textSecondary">
-            {customersData.data.data.length} 件の顧客が見つかりました
-          </Typography>
+          <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+            <Typography variant="body2" color="textSecondary">
+              {customersData.data.from}-{customersData.data.to} / {customersData.data.total}件
+            </Typography>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={!customersData.data.prev_page_url}
+                onClick={() => setPage((p) => Math.max(1, p - 1))}
+              >
+                前へ
+              </Button>
+              <Typography variant="body2" color="textSecondary">
+                ページ {customersData.data.current_page} / {customersData.data.last_page}
+              </Typography>
+              <Button
+                variant="outlined"
+                size="small"
+                disabled={!customersData.data.next_page_url}
+                onClick={() => setPage((p) => p + 1)}
+              >
+                次へ
+              </Button>
+            </Box>
+          </Box>
         </Box>
       )}
 
