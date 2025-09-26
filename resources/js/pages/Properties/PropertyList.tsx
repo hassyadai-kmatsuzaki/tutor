@@ -151,13 +151,15 @@ const PropertyList: React.FC = () => {
 
   return (
     <Box sx={{ px: { xs: 1, sm: 2 } }}>
-      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
-        <Typography variant="h4">物件管理</Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+      <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: isMobile ? 'flex-start' : 'center', mb: 3, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 2 : 0 }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'}>物件管理</Typography>
+        <Box sx={{ display: 'flex', gap: 1, width: isMobile ? '100%' : 'auto' }}>
           <Button
             variant="outlined"
             startIcon={<UploadIcon />}
             onClick={() => setShowImportDialog(true)}
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isMobile}
           >
             CSVインポート
           </Button>
@@ -165,6 +167,8 @@ const PropertyList: React.FC = () => {
             variant="contained"
             startIcon={<AddIcon />}
             onClick={() => setShowCreateForm(true)}
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isMobile}
           >
             新規登録
           </Button>

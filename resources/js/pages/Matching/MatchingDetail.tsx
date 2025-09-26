@@ -26,6 +26,8 @@ import {
   Alert,
   Paper,
   IconButton,
+  useMediaQuery,
+  useTheme,
 } from '@mui/material';
 import {
   ArrowBack as ArrowBackIcon,
@@ -48,6 +50,8 @@ const MatchingDetail: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const queryClient = useQueryClient();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('md'));
   const [showStatusDialog, setShowStatusDialog] = useState(false);
   const [showNoteDialog, setShowNoteDialog] = useState(false);
   const [newStatus, setNewStatus] = useState('');
@@ -125,20 +129,22 @@ const MatchingDetail: React.FC = () => {
   if (!matchData) return <ErrorAlert title="エラー" message="マッチング情報が見つかりません" />;
 
   return (
-    <Box sx={{ p: 3 }}>
+    <Box sx={{ p: { xs: 1.5, md: 3 } }}>
       {/* ヘッダー */}
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 3 }}>
-        <IconButton onClick={() => navigate('/matching')} sx={{ mr: 2 }}>
+      <Box sx={{ display: 'flex', alignItems: isMobile ? 'flex-start' : 'center', mb: isMobile ? 2 : 3, flexDirection: isMobile ? 'column' : 'row', gap: isMobile ? 1 : 0 }}>
+        <IconButton onClick={() => navigate('/matching')} sx={{ mr: isMobile ? 0 : 2 }}>
           <ArrowBackIcon />
         </IconButton>
-        <Typography variant="h4" sx={{ flexGrow: 1 }}>
+        <Typography variant={isMobile ? 'h5' : 'h4'} sx={{ flexGrow: 1 }}>
           マッチング詳細
         </Typography>
-        <Box sx={{ display: 'flex', gap: 1 }}>
+        <Box sx={{ display: 'flex', gap: 1, width: isMobile ? '100%' : 'auto' }}>
           <Button
             variant="outlined"
             startIcon={<EditIcon />}
             onClick={() => setShowStatusDialog(true)}
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isMobile}
           >
             ステータス更新
           </Button>
@@ -146,25 +152,27 @@ const MatchingDetail: React.FC = () => {
             variant="outlined"
             startIcon={<NoteIcon />}
             onClick={() => setShowNoteDialog(true)}
+            size={isMobile ? 'small' : 'medium'}
+            fullWidth={isMobile}
           >
             メモ追加
           </Button>
         </Box>
       </Box>
 
-      <Grid container spacing={3}>
+      <Grid container spacing={isMobile ? 1.5 : 3}>
         {/* マッチングスコア */}
         <Grid item xs={12}>
           <Card>
-            <CardContent>
-              <Typography variant="h6" gutterBottom>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              <Typography variant={isMobile ? 'subtitle1' : 'h6'} gutterBottom>
                 マッチングスコア
               </Typography>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-                <Typography variant="h3" color="primary" sx={{ mr: 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 1.5 : 2 }}>
+                <Typography variant={isMobile ? 'h4' : 'h3'} color="primary" sx={{ mr: 2 }}>
                   {matchData.score_details?.total_score || matchData.match_score}
                 </Typography>
-                <Typography variant="h6" color="text.secondary">
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'} color="text.secondary">
                   / 100
                 </Typography>
                 <Chip
@@ -175,7 +183,7 @@ const MatchingDetail: React.FC = () => {
               </Box>
 
               {matchData.score_details && (
-                <Grid container spacing={2}>
+                <Grid container spacing={isMobile ? 1.5 : 2}>
                   <Grid item xs={12} md={2.4}>
                     <Box>
                       <Typography variant="body2" color="text.secondary">
@@ -184,7 +192,7 @@ const MatchingDetail: React.FC = () => {
                       <LinearProgress
                         variant="determinate"
                         value={matchData.score_details.budget_score}
-                        sx={{ mt: 1, mb: 1 }}
+                        sx={{ mt: 0.5, mb: 0.5, height: isMobile ? 6 : 8, borderRadius: 3 }}
                       />
                       <Typography variant="body2" fontWeight="bold">
                         {matchData.score_details.budget_score}点
@@ -199,7 +207,7 @@ const MatchingDetail: React.FC = () => {
                       <LinearProgress
                         variant="determinate"
                         value={matchData.score_details.area_score}
-                        sx={{ mt: 1, mb: 1 }}
+                        sx={{ mt: 0.5, mb: 0.5, height: isMobile ? 6 : 8, borderRadius: 3 }}
                       />
                       <Typography variant="body2" fontWeight="bold">
                         {matchData.score_details.area_score}点
@@ -214,7 +222,7 @@ const MatchingDetail: React.FC = () => {
                       <LinearProgress
                         variant="determinate"
                         value={matchData.score_details.type_score}
-                        sx={{ mt: 1, mb: 1 }}
+                        sx={{ mt: 0.5, mb: 0.5, height: isMobile ? 6 : 8, borderRadius: 3 }}
                       />
                       <Typography variant="body2" fontWeight="bold">
                         {matchData.score_details.type_score}点
@@ -229,7 +237,7 @@ const MatchingDetail: React.FC = () => {
                       <LinearProgress
                         variant="determinate"
                         value={matchData.score_details.size_score}
-                        sx={{ mt: 1, mb: 1 }}
+                        sx={{ mt: 0.5, mb: 0.5, height: isMobile ? 6 : 8, borderRadius: 3 }}
                       />
                       <Typography variant="body2" fontWeight="bold">
                         {matchData.score_details.size_score}点
@@ -244,7 +252,7 @@ const MatchingDetail: React.FC = () => {
                       <LinearProgress
                         variant="determinate"
                         value={matchData.score_details.yield_score}
-                        sx={{ mt: 1, mb: 1 }}
+                        sx={{ mt: 0.5, mb: 0.5, height: isMobile ? 6 : 8, borderRadius: 3 }}
                       />
                       <Typography variant="body2" fontWeight="bold">
                         {matchData.score_details.yield_score}点
@@ -260,12 +268,12 @@ const MatchingDetail: React.FC = () => {
         {/* 物件情報 */}
         <Grid item xs={12} md={6}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 1.5 : 2 }}>
                 <HomeIcon sx={{ mr: 1 }} />
-                <Typography variant="h6">物件情報</Typography>
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'}>物件情報</Typography>
               </Box>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant={isMobile ? 'h6' : 'h5'} gutterBottom>
                 {matchData.property.property_name}
               </Typography>
               <List dense>
@@ -293,9 +301,9 @@ const MatchingDetail: React.FC = () => {
               </List>
               <Button
                 variant="outlined"
-                size="small"
+                size={isMobile ? 'small' : 'medium'}
                 onClick={() => navigate(`/properties/${matchData.property.id}`)}
-                sx={{ mt: 2 }}
+                sx={{ mt: isMobile ? 1.5 : 2 }}
               >
                 物件詳細を見る
               </Button>
@@ -306,12 +314,12 @@ const MatchingDetail: React.FC = () => {
         {/* 顧客情報 */}
         <Grid item xs={12} md={6}>
           <Card sx={{ height: '100%' }}>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 1.5 : 2 }}>
                 <PersonIcon sx={{ mr: 1 }} />
-                <Typography variant="h6">顧客情報</Typography>
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'}>顧客情報</Typography>
               </Box>
-              <Typography variant="h5" gutterBottom>
+              <Typography variant={isMobile ? 'h6' : 'h5'} gutterBottom>
                 {matchData.customer.customer_name}
               </Typography>
               <List dense>
@@ -336,9 +344,9 @@ const MatchingDetail: React.FC = () => {
               </List>
               <Button
                 variant="outlined"
-                size="small"
+                size={isMobile ? 'small' : 'medium'}
                 onClick={() => navigate(`/customers/${matchData.customer.id}`)}
-                sx={{ mt: 2 }}
+                sx={{ mt: isMobile ? 1.5 : 2 }}
               >
                 顧客詳細を見る
               </Button>
@@ -350,10 +358,10 @@ const MatchingDetail: React.FC = () => {
         {matchData.status_history && matchData.status_history.length > 0 && (
           <Grid item xs={12} md={6}>
             <Card>
-              <CardContent>
-                <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+                <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 1.5 : 2 }}>
                   <TimelineIcon sx={{ mr: 1 }} />
-                  <Typography variant="h6">ステータス履歴</Typography>
+                  <Typography variant={isMobile ? 'subtitle1' : 'h6'}>ステータス履歴</Typography>
                 </Box>
                 <List dense>
                   {matchData.status_history.map((history: any, index: number) => (
@@ -376,26 +384,26 @@ const MatchingDetail: React.FC = () => {
         {/* メモ・活動履歴 */}
         <Grid item xs={12} md={6}>
           <Card>
-            <CardContent>
-              <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+            <CardContent sx={{ p: isMobile ? 1.5 : 2 }}>
+              <Box sx={{ display: 'flex', alignItems: 'center', mb: isMobile ? 1.5 : 2 }}>
                 <NoteIcon sx={{ mr: 1 }} />
-                <Typography variant="h6">メモ・活動履歴</Typography>
+                <Typography variant={isMobile ? 'subtitle1' : 'h6'}>メモ・活動履歴</Typography>
               </Box>
               {matchData.notes ? (
-                <Paper sx={{ p: 2, mb: 2, bgcolor: 'grey.50' }}>
+                <Paper sx={{ p: isMobile ? 1.5 : 2, mb: isMobile ? 1.5 : 2, bgcolor: 'grey.50' }}>
                   <Typography variant="body2" component="pre" sx={{ whiteSpace: 'pre-wrap' }}>
                     {matchData.notes}
                   </Typography>
                 </Paper>
               ) : (
-                <Typography variant="body2" color="text.secondary" sx={{ mb: 2 }}>
+                <Typography variant="body2" color="text.secondary" sx={{ mb: isMobile ? 1.5 : 2 }}>
                   メモはありません
                 </Typography>
               )}
               
               {matchData.activities && matchData.activities.length > 0 && (
                 <Box>
-                  <Divider sx={{ my: 2 }} />
+                  <Divider sx={{ my: isMobile ? 1.5 : 2 }} />
                   <Typography variant="subtitle2" gutterBottom>
                     最近の活動
                   </Typography>
