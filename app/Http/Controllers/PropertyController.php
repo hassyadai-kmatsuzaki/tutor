@@ -353,23 +353,32 @@ class PropertyController extends Controller
                 $data = array_combine($header, $row);
                 
                 // データの変換・検証（新しいCSVフォーマットに対応）
+                // 値の正規化
+                $rawType = $data['種別'] ?? null;
+                $propertyType = in_array($rawType, Property::PROPERTY_TYPES, true) ? $rawType : null;
+                $rawTxn = $data['取引態様'] ?? ($data['取引区分'] ?? null);
+                $transactionCategory = in_array($rawTxn, Property::TRANSACTION_CATEGORIES, true) ? $rawTxn : null;
+                $address = $data['住所'] ?? null;
+
                 $propertyData = [
-                    'property_name' => $data['物件名'] ?? '',
-                    'property_type' => $data['種別'] ?? '',
-                    'manager_name' => $data['担当名'] ?? $data['担当者名'] ?? '',
-                    'registration_date' => $this->parseDate($data['登録日'] ?? null) ?? now()->format('Y-m-d'),
-                    'address' => $data['住所'] ?? '',
+                    'property_name' => $data['物件名'] ?? null,
+                    'property_type' => $propertyType,
+                    'manager_name' => $data['担当名'] ?? ($data['担当者名'] ?? null),
+                    'registration_date' => $this->parseDate($data['登録日'] ?? null),
+                    // 住所は一旦 address のみに格納
+                    'address' => $address,
                     'information_source' => $data['情報取得先'] ?? null,
-                    'transaction_category' => $data['取引態様'] ?? $data['取引区分'] ?? '',
-                    'land_area' => $this->parseNumeric($data['地積(㎡)'] ?? $data['地積'] ?? null),
-                    'building_area' => $this->parseNumeric($data['建物面積(㎡)'] ?? $data['建物面積'] ?? null),
+                    'transaction_category' => $transactionCategory,
+                    'land_area' => $this->parseNumeric($data['地積(㎡)'] ?? ($data['地積'] ?? null)),
+                    'building_area' => $this->parseNumeric($data['建物面積(㎡)'] ?? ($data['建物面積'] ?? null)),
                     'structure_floors' => $data['構造階数'] ?? null,
                     'construction_year' => $this->parseDate($data['築年'] ?? null),
-                    'price' => $this->parseNumeric($data['価格【万円】'] ?? $data['価格'] ?? null) ?? 0,
-                    'price_per_unit' => $this->parseNumeric($data['坪単価【万円】'] ?? $data['坪単価'] ?? null),
-                    'current_profit' => $this->parseNumeric($data['現況利回'] ?? $data['利回り'] ?? null),
-                    'prefecture' => $this->extractPrefecture($data['住所'] ?? ''),
-                    'city' => $this->extractCity($data['住所'] ?? ''),
+                    'price' => $this->parseNumeric($data['価格【万円】'] ?? ($data['価格'] ?? null)),
+                    'price_per_unit' => $this->parseNumeric($data['坪単価【万円】'] ?? ($data['坪単価'] ?? null)),
+                    'current_profit' => $this->parseNumeric($data['現況利回'] ?? ($data['利回り'] ?? null)),
+                    // 都道府県・市区町村は当面nullにしておく（住所解析は後段で対応）
+                    'prefecture' => null,
+                    'city' => null,
                     'nearest_station' => $data['最寄り駅'] ?? null,
                     'walking_minutes' => $this->parseNumeric($data['徒歩分数'] ?? null),
                     'remarks' => $data['備考'] ?? null,
