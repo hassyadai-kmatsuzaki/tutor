@@ -31,12 +31,16 @@ const MatchingList: React.FC = () => {
   const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
   const [minScore, setMinScore] = useState('');
+  const [page, setPage] = useState(1);
+  const [perPage, setPerPage] = useState(15);
 
   const { data: matchesData, isLoading, error } = useQuery({
-    queryKey: ['matches', { status: statusFilter, min_score: minScore }],
+    queryKey: ['matches', { status: statusFilter, min_score: minScore, page, per_page: perPage }],
     queryFn: () => matchApi.getList({
       status: statusFilter || undefined,
       min_score: minScore ? parseInt(minScore) : undefined,
+      page,
+      per_page: perPage,
     }),
     select: (response) => response.data,
   });
@@ -153,6 +157,8 @@ const MatchingList: React.FC = () => {
               onClick={() => {
                 setStatusFilter('');
                 setMinScore('');
+                setPage(1);
+                setPerPage(15);
               }}
               sx={{ height: '56px' }}
             >
@@ -290,12 +296,33 @@ const MatchingList: React.FC = () => {
         </Table>
       </TableContainer>
 
-      {/* 統計情報 */}
+      {/* ページネーション */}
       {matchesData?.data && (
-        <Box sx={{ mt: 2 }}>
+        <Box sx={{ mt: 2, display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
           <Typography variant="body2" color="textSecondary">
-            {matchesData.data.data.length} 件のマッチングが見つかりました
+            {matchesData.data.from}-{matchesData.data.to} / {matchesData.data.total}件
           </Typography>
+          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1 }}>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!matchesData.data.prev_page_url}
+              onClick={() => setPage((p) => Math.max(1, p - 1))}
+            >
+              前へ
+            </Button>
+            <Typography variant="body2" color="textSecondary">
+              ページ {matchesData.data.current_page} / {matchesData.data.last_page}
+            </Typography>
+            <Button
+              variant="outlined"
+              size="small"
+              disabled={!matchesData.data.next_page_url}
+              onClick={() => setPage((p) => p + 1)}
+            >
+              次へ
+            </Button>
+          </Box>
         </Box>
       )}
     </Box>

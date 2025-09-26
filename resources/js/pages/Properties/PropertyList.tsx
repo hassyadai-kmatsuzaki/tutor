@@ -19,6 +19,8 @@ import {
   Select,
   MenuItem,
 } from '@mui/material';
+import { useTheme } from '@mui/material/styles';
+import useMediaQuery from '@mui/material/useMediaQuery';
 import {
   Add as AddIcon,
   Edit as EditIcon,
@@ -35,6 +37,8 @@ import { Property, PropertyFilters } from '../../types';
 
 const PropertyList: React.FC = () => {
   const navigate = useNavigate();
+  const theme = useTheme();
+  const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const [filters, setFilters] = useState<PropertyFilters>({
     page: 1,
     per_page: 15,
@@ -146,7 +150,7 @@ const PropertyList: React.FC = () => {
   }
 
   return (
-    <Box>
+    <Box sx={{ px: { xs: 1, sm: 2 } }}>
       <Box sx={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', mb: 3 }}>
         <Typography variant="h4">物件管理</Typography>
         <Box sx={{ display: 'flex', gap: 1 }}>
@@ -252,103 +256,147 @@ const PropertyList: React.FC = () => {
         </Grid>
       </Paper>
 
-      {/* 物件一覧テーブル */}
-      <TableContainer component={Paper}>
-        <Table>
-          <TableHead>
-            <TableRow>
-              <TableCell>物件名</TableCell>
-              <TableCell>種別</TableCell>
-              <TableCell>所在地</TableCell>
-              <TableCell align="right">価格（万円）</TableCell>
-              <TableCell align="right">利回り（%）</TableCell>
-              <TableCell>ステータス</TableCell>
-              <TableCell>担当者</TableCell>
-              <TableCell align="center">操作</TableCell>
-            </TableRow>
-          </TableHead>
-          <TableBody>
-            {data?.data.map((property: Property) => (
-              <TableRow 
-                key={property.id} 
-                hover 
-                onClick={() => navigate(`/properties/${property.id}`)}
-                sx={{ cursor: 'pointer' }}
-              >
-                <TableCell>
-                  <Typography variant="body2" fontWeight="medium">
-                    {property.property_name}
-                  </Typography>
-                </TableCell>
-                <TableCell>
-                  {property.property_type ? (
-                    <Chip label={property.property_type} size="small" />
-                  ) : (
-                    <Typography variant="body2" color="textSecondary">-</Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {property.address || '-'}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  <Typography variant="body2" fontWeight="medium">
-                    {property.price != null ? property.price.toLocaleString() : '-'}
-                  </Typography>
-                </TableCell>
-                <TableCell align="right">
-                  {property.current_profit ? (
-                    <Typography variant="body2">
-                      {property.current_profit}%
-                    </Typography>
-                  ) : (
-                    <Typography variant="body2" color="textSecondary">
-                      -
-                    </Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  {property.status ? (
-                    <Chip
-                      label={getStatusLabel(property.status)}
-                      color={getStatusColor(property.status) as any}
-                      size="small"
-                    />
-                  ) : (
-                    <Typography variant="body2" color="textSecondary">-</Typography>
-                  )}
-                </TableCell>
-                <TableCell>
-                  <Typography variant="body2">
-                    {property.creator?.name || property.manager_name}
-                  </Typography>
-                </TableCell>
-                <TableCell align="center">
-                  <IconButton
+      {/* 一覧：モバイルはカード、PCはテーブル */}
+      {isMobile ? (
+        <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1.5 }}>
+          {data?.data.map((property: Property) => (
+            <Paper
+              key={property.id}
+              variant="outlined"
+              onClick={() => navigate(`/properties/${property.id}`)}
+              sx={{ p: 1.5, borderRadius: 2, cursor: 'pointer' }}
+            >
+              <Box sx={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', mb: .5 }}>
+                <Typography variant="subtitle2" fontWeight={700} sx={{ mr: 1 }}>
+                  {property.property_name}
+                </Typography>
+                {property.status && (
+                  <Chip
+                    label={getStatusLabel(property.status)}
+                    color={getStatusColor(property.status) as any}
                     size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      navigate(`/properties/${property.id}`);
-                    }}
-                  >
-                    <VisibilityIcon />
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingProperty(property);
-                    }}
-                  >
-                    <EditIcon />
-                  </IconButton>
-                </TableCell>
+                    sx={{ height: 22 }}
+                  />
+                )}
+              </Box>
+              <Typography variant="body2" color="text.secondary" sx={{ mb: .5 }}>
+                {property.address || '-'}
+              </Typography>
+              <Box sx={{ display: 'flex', gap: 1.5, flexWrap: 'wrap' }}>
+                {property.property_type && (
+                  <Chip label={property.property_type} size="small" variant="outlined" />
+                )}
+                <Typography variant="body2">
+                  価格: {property.price != null ? `${property.price.toLocaleString()}万円` : '-'}
+                </Typography>
+                <Typography variant="body2">
+                  利回り: {property.current_profit != null ? `${property.current_profit}%` : '-'}
+                </Typography>
+                <Typography variant="body2">
+                  担当: {property.creator?.name || property.manager_name || '-'}
+                </Typography>
+              </Box>
+            </Paper>
+          ))}
+        </Box>
+      ) : (
+        <TableContainer component={Paper}>
+          <Table>
+            <TableHead>
+              <TableRow>
+                <TableCell>物件名</TableCell>
+                <TableCell>種別</TableCell>
+                <TableCell>所在地</TableCell>
+                <TableCell align="right">価格（万円）</TableCell>
+                <TableCell align="right">利回り（%）</TableCell>
+                <TableCell>ステータス</TableCell>
+                <TableCell>担当者</TableCell>
+                <TableCell align="center">操作</TableCell>
               </TableRow>
-            ))}
-          </TableBody>
-        </Table>
-      </TableContainer>
+            </TableHead>
+            <TableBody>
+              {data?.data.map((property: Property) => (
+                <TableRow 
+                  key={property.id} 
+                  hover 
+                  onClick={() => navigate(`/properties/${property.id}`)}
+                  sx={{ cursor: 'pointer' }}
+                >
+                  <TableCell>
+                    <Typography variant="body2" fontWeight="medium">
+                      {property.property_name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell>
+                    {property.property_type ? (
+                      <Chip label={property.property_type} size="small" />
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">-</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {property.address || '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    <Typography variant="body2" fontWeight="medium">
+                      {property.price != null ? property.price.toLocaleString() : '-'}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="right">
+                    {property.current_profit ? (
+                      <Typography variant="body2">
+                        {property.current_profit}%
+                      </Typography>
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">
+                        -
+                      </Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    {property.status ? (
+                      <Chip
+                        label={getStatusLabel(property.status)}
+                        color={getStatusColor(property.status) as any}
+                        size="small"
+                      />
+                    ) : (
+                      <Typography variant="body2" color="textSecondary">-</Typography>
+                    )}
+                  </TableCell>
+                  <TableCell>
+                    <Typography variant="body2">
+                      {property.creator?.name || property.manager_name}
+                    </Typography>
+                  </TableCell>
+                  <TableCell align="center">
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        navigate(`/properties/${property.id}`);
+                      }}
+                    >
+                      <VisibilityIcon />
+                    </IconButton>
+                    <IconButton
+                      size="small"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        setEditingProperty(property);
+                      }}
+                    >
+                      <EditIcon />
+                    </IconButton>
+                  </TableCell>
+                </TableRow>
+              ))}
+            </TableBody>
+          </Table>
+        </TableContainer>
+      )}
 
       {/* ページネーション情報 */}
       {data && (
