@@ -384,12 +384,26 @@ class PropertyController extends Controller
             }
         }
 
-        return response()->json([
+        // UTF-8不正文字をサニタイズしてから返却
+        $safe = function ($value) {
+            if (is_string($value)) {
+                // 不正UTF-8を置換
+                return mb_convert_encoding($value, 'UTF-8', 'UTF-8');
+            }
+            if (is_array($value)) {
+                return array_map(function ($v) use ($safe) { return $safe($v); }, $value);
+            }
+            return $value;
+        };
+
+        $response = [
             'success' => true,
             'message' => "{$imported}件の物件をインポートしました",
             'imported' => $imported,
-            'errors' => $errors
-        ]);
+            'errors' => array_map(fn($e) => $safe($e), $errors),
+        ];
+
+        return response()->json($response, 200, [], JSON_INVALID_UTF8_SUBSTITUTE);
     }
 
     /**

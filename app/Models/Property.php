@@ -11,6 +11,18 @@ class Property extends Model
 {
     use HasFactory;
 
+    protected static function booted(): void
+    {
+        static::created(function (Property $property): void {
+            // property_code未設定なら、idを8桁ゼロ埋めで設定
+            if (empty($property->property_code ?? null)) {
+                $property->property_code = str_pad((string)$property->id, 8, '0', STR_PAD_LEFT);
+                // 競合回避のためサイレントに保存（例外はそのまま投げる）
+                $property->saveQuietly();
+            }
+        });
+    }
+
     /**
      * The attributes that are mass assignable.
      *
