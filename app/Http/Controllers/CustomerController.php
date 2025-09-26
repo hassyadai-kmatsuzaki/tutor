@@ -391,8 +391,25 @@ class CustomerController extends Controller
         $tempFile = tempnam(sys_get_temp_dir(), 'csv_import_');
         file_put_contents($tempFile, $content);
         
-        $data = array_map('str_getcsv', file($tempFile));
+        // fgetcsvで改行含むセル（備考等）を安全に読み取り（区切りはカンマ固定）
+        $data = [];
+        if (($handle = fopen($tempFile, 'r')) !== false) {
+            while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
+                $data[] = $row;
+            }
+            fclose($handle);
+        }
         $headers = array_shift($data);
+        // ヘッダー整形（BOM除去・トリム・改行除去）
+        $headers = array_map(function ($h) {
+            $h = is_string($h) ? $h : '';
+            // BOM除去
+            if (str_starts_with($h, "\xEF\xBB\xBF")) {
+                $h = substr($h, 3);
+            }
+            $h = trim(preg_replace("/\r?\n/", ' ', $h));
+            return $h;
+        }, $headers ?? []);
         
         // 一時ファイルを削除
         unlink($tempFile);
@@ -407,10 +424,38 @@ class CustomerController extends Controller
 
         foreach ($data as $index => $row) {
             try {
+                // 空行スキップ
+                if (!is_array($row) || count(array_filter($row, function ($v) { return trim((string)$v) !== ''; })) === 0) {
+                    continue;
+                }
+                // 行トリム（改行は保持）
+                $row = array_map(function ($v) { return is_string($v) ? rtrim($v) : $v; }, $row);
+                // 末尾の空要素削除
+                while (count($row) > 0 && trim((string)end($row)) === '') {
+                    array_pop($row);
+                    if (count($row) <= count($headers)) break;
+                }
+                // 列不足はnullパディング
+                if (count($row) < count($headers)) {
+                    $row = array_pad($row, count($headers), null);
+                }
+                // 多い場合は切り詰め
+                if (count($row) > count($headers)) {
+                    $row = array_slice($row, 0, count($headers));
+                }
+
+                if (count($row) !== count($headers)) {
+                    throw new \RuntimeException('列数不一致');
+                }
+
                 $rawData = array_combine($headers, $row);
                 
                 // 新しいCSVフォーマット（買いニーズ）に対応したデータマッピング
                 $customerData = $this->mapCustomerData($rawData);
+                // 顧客名が空の場合はデフォルト文言
+                if (empty($customerData['customer_name'])) {
+                    $customerData['customer_name'] = '買主名未入力';
+                }
                 
                 // コードが指定されている場合は更新、そうでなければ新規作成
                 if (!empty($customerData['customer_code'])) {
