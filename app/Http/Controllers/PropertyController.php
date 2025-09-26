@@ -308,7 +308,14 @@ class PropertyController extends Controller
         $tempFile = tempnam(sys_get_temp_dir(), 'csv_import_');
         file_put_contents($tempFile, $content);
         
-        $csvData = array_map('str_getcsv', file($tempFile));
+        // fgetcsvで改行を含むフィールド（備考など）も安全に読み込む（区切りはカンマ固定）
+        $csvData = [];
+        if (($handle = fopen($tempFile, 'r')) !== false) {
+            while (($row = fgetcsv($handle, 0, ',', '"')) !== false) {
+                $csvData[] = $row;
+            }
+            fclose($handle);
+        }
         $header = array_shift($csvData);
         
         // ヘッダー整形（BOM除去・トリム）
