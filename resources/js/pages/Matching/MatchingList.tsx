@@ -22,12 +22,13 @@ import {
   LinearProgress,
 } from '@mui/material';
 import { Search, TrendingUp, Refresh } from '@mui/icons-material';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { matchApi } from '../../services/api';
 import { PropertyMatch } from '../../types';
 
 const MatchingList: React.FC = () => {
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [statusFilter, setStatusFilter] = useState('');
   const [minScore, setMinScore] = useState('');
 
@@ -38,6 +39,16 @@ const MatchingList: React.FC = () => {
       min_score: minScore ? parseInt(minScore) : undefined,
     }),
     select: (response) => response.data,
+  });
+
+  const generateMutation = useMutation({
+    mutationFn: async () => {
+      const score = minScore ? parseInt(minScore) : undefined;
+      return matchApi.generate(score !== undefined ? { min_score: score } : undefined);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['matches'] });
+    },
   });
 
   const getStatusColor = (status: string) => {
@@ -95,8 +106,13 @@ const MatchingList: React.FC = () => {
         <Typography variant="h4">
           マッチング管理
         </Typography>
-        <Button variant="contained" startIcon={<Refresh />}>
-          マッチング再計算
+        <Button 
+          variant="contained" 
+          startIcon={<Refresh />} 
+          onClick={() => generateMutation.mutate()}
+          disabled={generateMutation.isPending}
+        >
+          {generateMutation.isPending ? '再計算中...' : 'マッチング再計算'}
         </Button>
       </Box>
 
