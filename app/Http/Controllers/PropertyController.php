@@ -546,4 +546,130 @@ class PropertyController extends Controller
         
         return '';
     }
+
+    /**
+     * 公開用物件検索ページ表示
+     */
+    public function publicSearch()
+    {
+        return view('property-search');
+    }
+
+    /**
+     * 公開用物件検索API（認証不要）
+     */
+    public function publicSearchApi(Request $request): JsonResponse
+    {
+        $query = Property::with(['images'])
+            ->where('status', 'available'); // 販売中のみ表示
+
+        // 検索条件の適用
+        if ($request->filled('property_type')) {
+            $types = is_array($request->property_type) 
+                ? $request->property_type 
+                : [$request->property_type];
+            $query->whereIn('property_type', $types);
+        }
+
+        // 取引形態検索（部分一致）
+        if ($request->filled('transaction_category')) {
+            $query->where('transaction_category', 'like', '%' . $request->transaction_category . '%');
+        }
+
+        if ($request->filled('prefecture')) {
+            $query->where('prefecture', $request->prefecture);
+        }
+
+        if ($request->filled('city')) {
+            $query->where('city', 'like', '%' . $request->city . '%');
+        }
+
+        if ($request->filled('price_min')) {
+            $query->where('price', '>=', $request->price_min);
+        }
+
+        if ($request->filled('price_max')) {
+            $query->where('price', '<=', $request->price_max);
+        }
+
+        // 利回り下限のみ
+        if ($request->filled('yield_min')) {
+            $query->where('current_profit', '>=', $request->yield_min);
+        }
+
+        // 築年数検索（例：10と入力で築10年以内）
+        if ($request->filled('building_age')) {
+            $currentYear = now()->year;
+            $targetYear = $currentYear - (int)$request->building_age;
+            $query->whereNotNull('construction_year')
+                  ->whereYear('construction_year', '>=', $targetYear);
+        }
+
+        // キーワード検索
+        if ($request->filled('keyword')) {
+            $keyword = $request->keyword;
+            $query->where(function($q) use ($keyword) {
+                $q->where('property_name', 'like', "%{$keyword}%")
+                  ->orWhere('address', 'like', "%{$keyword}%")
+                  ->orWhere('remarks', 'like', "%{$keyword}%");
+            });
+        }
+
+        // ソート
+        $sortBy = $request->get('sort_by', 'created_at');
+        $sortOrder = $request->get('sort_order', 'desc');
+        
+        // 許可されたソートフィールドのみ
+        $allowedSortFields = ['created_at', 'price', 'current_profit', 'registration_date'];
+        if (in_array($sortBy, $allowedSortFields)) {
+            $query->orderBy($sortBy, $sortOrder);
+        } else {
+            $query->orderBy('created_at', 'desc');
+        }
+
+        // ページネーション
+        $properties = $query->paginate($request->get('per_page', 12));
+
+        // 画像URLを完全なURLに変換
+        $properties->getCollection()->transform(function ($property) {
+            if ($property->images) {
+                $property->images->transform(function ($image) {
+                    $image->image_url = asset('storage/' . $image->image_path);
+                    return $image;
+                });
+            }
+            return $property;
+        });
+
+        return response()->json([
+            'success' => true,
+            'data' => $properties,
+            'filters' => [
+                'property_types' => Property::PROPERTY_TYPES,
+            ]
+        ]);
+    }
+
+    /**
+     * 公開用物件詳細取得（認証不要）
+     */
+    public function publicShow($id): JsonResponse
+    {
+        $property = Property::with(['images'])
+            ->where('status', 'available')
+            ->findOrFail($id);
+
+        // 画像URLを完全なURLに変換
+        if ($property->images) {
+            $property->images->transform(function ($image) {
+                $image->image_url = asset('storage/' . $image->image_path);
+                return $image;
+            });
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $property
+        ]);
+    }
 } 
