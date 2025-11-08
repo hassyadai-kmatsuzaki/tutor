@@ -5,6 +5,9 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="robots" content="noindex, nofollow">
     <title>物件検索 - {{ config('app.name', 'Laravel') }}</title>
+    
+    <!-- Google Maps API -->
+    <script src="https://maps.googleapis.com/maps/api/js?key=AIzaSyCNrA5PeDgi_4FES1XUYF8Amoe2qKPlmPY&libraries=places&language=ja"></script>
 
     <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.bunny.net">
@@ -60,14 +63,34 @@
         .search-section {
             background: white;
             border-radius: 12px;
-            padding: 1.25rem;
             margin-bottom: 1.5rem;
             box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .search-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 1.25rem;
+            cursor: pointer;
+            user-select: none;
+            transition: background 0.2s;
+        }
+
+        .search-header:active {
+            background: rgba(102, 126, 234, 0.05);
+        }
+
+        @media (min-width: 768px) {
+            .search-header:hover {
+                background: rgba(102, 126, 234, 0.05);
+            }
         }
 
         /* モバイルでの余白を調整 */
         @media (max-width: 767px) {
-            .search-section {
+            .search-header {
                 padding: 1.5rem;
             }
         }
@@ -75,8 +98,52 @@
         .search-title {
             font-size: 1rem;
             font-weight: 700;
-            margin-bottom: 1rem;
             color: #667eea;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .search-toggle {
+            background: none;
+            border: none;
+            color: #667eea;
+            font-size: 1.5rem;
+            cursor: pointer;
+            padding: 0.25rem;
+            line-height: 1;
+            transition: transform 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .search-toggle.collapsed {
+            transform: rotate(180deg);
+        }
+
+        .search-content {
+            padding: 0 1.25rem 1.25rem;
+            max-height: 3000px;
+            overflow: hidden;
+            transition: max-height 0.4s ease-out, padding 0.4s ease-out;
+        }
+
+        .search-content.collapsed {
+            max-height: 0;
+            padding-top: 0;
+            padding-bottom: 0;
+        }
+
+        /* モバイルでの余白を調整 */
+        @media (max-width: 767px) {
+            .search-content {
+                padding: 0 1.5rem 1.5rem;
+            }
+            
+            .search-content.collapsed {
+                padding: 0 1.5rem 0;
+            }
         }
 
         .form-group {
@@ -344,6 +411,12 @@
             font-size: 0.875rem;
         }
 
+        @media (min-width: 640px) {
+            .property-details {
+                grid-template-columns: repeat(4, 1fr);
+            }
+        }
+
         .property-price {
             grid-column: 1 / -1;
             font-size: 1.25rem;
@@ -585,6 +658,109 @@
             white-space: pre-wrap;
             line-height: 1.8;
         }
+
+        /* 表示切り替えボタン */
+        .view-toggle {
+            display: flex;
+            gap: 0.5rem;
+            margin-bottom: 1rem;
+            background: white;
+            padding: 0.5rem;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+
+        .view-toggle-btn {
+            flex: 1;
+            padding: 0.875rem 1rem;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            transition: all 0.2s;
+            font-size: 0.9375rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        .view-toggle-btn.active {
+            background: #667eea;
+            color: white;
+            border-color: #667eea;
+        }
+
+        .view-toggle-btn:active:not(.active) {
+            transform: scale(0.98);
+        }
+
+        @media (min-width: 768px) {
+            .view-toggle-btn:hover:not(.active) {
+                border-color: #667eea;
+                background: rgba(102, 126, 234, 0.05);
+            }
+        }
+
+        /* マップコンテナ */
+        #map-container {
+            display: none;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            overflow: hidden;
+            height: calc(100vh - 250px);
+            min-height: 500px;
+        }
+
+        #map-container.active {
+            display: block;
+        }
+
+        #map {
+            width: 100%;
+            height: 100%;
+        }
+
+        /* マップの情報ウィンドウカスタム */
+        .map-info-window {
+            padding: 0.5rem;
+            max-width: 250px;
+        }
+
+        .map-info-title {
+            font-weight: 700;
+            font-size: 0.9375rem;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+
+        .map-info-price {
+            font-weight: 700;
+            font-size: 1.125rem;
+            color: #667eea;
+            margin-bottom: 0.5rem;
+        }
+
+        .map-info-detail {
+            font-size: 0.8125rem;
+            color: #666;
+            margin-bottom: 0.25rem;
+        }
+
+        .map-info-btn {
+            margin-top: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 0.875rem;
+            font-weight: 600;
+            width: 100%;
+        }
     </style>
 </head>
 <body>
@@ -595,9 +771,18 @@
     <div class="container">
         <!-- 検索フォーム -->
         <div class="search-section">
-            <div class="search-title">検索条件</div>
+            <div class="search-header" onclick="toggleSearch()">
+                <div class="search-title">
+                    <span>🔍</span>
+                    <span>検索条件</span>
+                </div>
+                <button type="button" class="search-toggle" id="search-toggle" aria-label="検索条件を開閉">
+                    ▲
+                </button>
+            </div>
             
-            <div class="form-group">
+            <div class="search-content" id="search-content">
+                <div class="form-group">
                 <label class="form-label">キーワード</label>
                 <input type="text" class="form-input" id="keyword" placeholder="物件名、住所など">
             </div>
@@ -642,8 +827,9 @@
                 <input type="number" class="form-input" id="building_age" placeholder="例：10 で築10年以内">
             </div>
 
-            <button class="btn btn-primary" onclick="searchProperties()">🔍 検索する</button>
-            <button class="btn btn-secondary" onclick="resetSearch()">リセット</button>
+                <button class="btn btn-primary" onclick="searchProperties()">🔍 検索する</button>
+                <button class="btn btn-secondary" onclick="resetSearch()">リセット</button>
+            </div>
         </div>
 
         <!-- 検索結果 -->
@@ -659,6 +845,19 @@
                 </select>
             </div>
 
+            <!-- 表示切り替えボタン -->
+            <div class="view-toggle">
+                <button class="view-toggle-btn active" id="list-view-btn" onclick="switchView('list')">
+                    <span>📋</span>
+                    <span>リスト表示</span>
+                </button>
+                <button class="view-toggle-btn" id="map-view-btn" onclick="switchView('map')">
+                    <span>🗺️</span>
+                    <span>マップ表示</span>
+                </button>
+            </div>
+
+            <!-- リスト表示 -->
             <div id="properties-container">
                 <div class="loading">
                     <div class="spinner"></div>
@@ -667,6 +866,11 @@
             </div>
 
             <div id="pagination-container" class="pagination"></div>
+
+            <!-- マップ表示 -->
+            <div id="map-container">
+                <div id="map"></div>
+            </div>
         </div>
     </div>
 
@@ -681,12 +885,100 @@
     <script>
         let currentPage = 1;
         let propertyTypes = [];
+        let searchOpen = true; // 初期状態は開いている
+        let currentView = 'list'; // 'list' or 'map'
+        let map = null;
+        let markers = [];
+        let infoWindows = [];
+        let geocoder = null;
+        let currentProperties = [];
 
         // ページ読み込み時に物件を取得
         document.addEventListener('DOMContentLoaded', function() {
             fetchPropertyTypes();
             searchProperties();
+            initMap();
+            
+            // ローカルストレージから検索エリアの状態を復元
+            const savedState = localStorage.getItem('searchOpen');
+            if (savedState !== null) {
+                searchOpen = savedState === 'true';
+                if (!searchOpen) {
+                    toggleSearch();
+                }
+            }
         });
+
+        // 表示切り替え
+        function switchView(view) {
+            currentView = view;
+            
+            const listBtn = document.getElementById('list-view-btn');
+            const mapBtn = document.getElementById('map-view-btn');
+            const propertiesContainer = document.getElementById('properties-container');
+            const paginationContainer = document.getElementById('pagination-container');
+            const mapContainer = document.getElementById('map-container');
+            
+            if (view === 'list') {
+                listBtn.classList.add('active');
+                mapBtn.classList.remove('active');
+                propertiesContainer.style.display = 'block';
+                paginationContainer.style.display = 'flex';
+                mapContainer.classList.remove('active');
+            } else {
+                listBtn.classList.remove('active');
+                mapBtn.classList.add('active');
+                propertiesContainer.style.display = 'none';
+                paginationContainer.style.display = 'none';
+                mapContainer.classList.add('active');
+                
+                // マップ表示時にリサイズをトリガー
+                setTimeout(() => {
+                    if (map) {
+                        google.maps.event.trigger(map, 'resize');
+                        if (markers.length > 0) {
+                            fitMapToMarkers();
+                        }
+                    }
+                }, 100);
+            }
+        }
+
+        // Google マップの初期化
+        function initMap() {
+            geocoder = new google.maps.Geocoder();
+            
+            // デフォルトの中心を東京に設定
+            const defaultCenter = { lat: 35.6812, lng: 139.7671 };
+            
+            map = new google.maps.Map(document.getElementById('map'), {
+                center: defaultCenter,
+                zoom: 12,
+                mapTypeControl: true,
+                streetViewControl: true,
+                fullscreenControl: true,
+                zoomControl: true
+            });
+        }
+
+        // 検索エリアの開閉
+        function toggleSearch() {
+            const content = document.getElementById('search-content');
+            const toggle = document.getElementById('search-toggle');
+            
+            searchOpen = !searchOpen;
+            
+            if (searchOpen) {
+                content.classList.remove('collapsed');
+                toggle.classList.remove('collapsed');
+            } else {
+                content.classList.add('collapsed');
+                toggle.classList.add('collapsed');
+            }
+            
+            // 状態をローカルストレージに保存
+            localStorage.setItem('searchOpen', searchOpen);
+        }
 
         // 物件種別を取得
         async function fetchPropertyTypes() {
@@ -761,8 +1053,10 @@
                 const data = await response.json();
 
                 if (data.success) {
+                    currentProperties = data.data.data; // 物件データを保存
                     renderProperties(data.data);
                     renderPagination(data.data);
+                    updateMapMarkers(data.data.data);
                 }
             } catch (error) {
                 console.error('Error searching properties:', error);
@@ -797,6 +1091,24 @@
                 const address = property.prefecture || property.city 
                     ? `${property.prefecture || ''}${property.city || ''}` 
                     : property.address || '住所非公開';
+                
+                // 坪単価を計算（1坪 = 3.30578㎡）
+                let tsuboPrice = '-';
+                if (property.price && property.land_area) {
+                    const tsubo = property.land_area / 3.30578;
+                    const pricePerTsubo = (property.price * 10000) / tsubo;
+                    tsuboPrice = `${Math.round(pricePerTsubo).toLocaleString()}円`;
+                }
+                
+                // 築年を計算
+                let buildingAge = '-';
+                if (property.construction_year) {
+                    const currentYear = new Date().getFullYear();
+                    const constructionYear = parseInt(property.construction_year);
+                    if (!isNaN(constructionYear)) {
+                        buildingAge = `築${currentYear - constructionYear}年`;
+                    }
+                }
 
                 return `
                     <div class="property-card" onclick="showPropertyDetail(${property.id})">
@@ -807,6 +1119,14 @@
                             <div class="property-detail-item">
                                 <span class="property-detail-label">利回り</span>
                                 <span class="property-detail-value">${yield_rate}</span>
+                            </div>
+                            <div class="property-detail-item">
+                                <span class="property-detail-label">坪単価</span>
+                                <span class="property-detail-value">${tsuboPrice}</span>
+                            </div>
+                            <div class="property-detail-item">
+                                <span class="property-detail-label">築年数</span>
+                                <span class="property-detail-value">${buildingAge}</span>
                             </div>
                             <div class="property-detail-item">
                                 <span class="property-detail-label">取引形態</span>
@@ -972,6 +1292,129 @@
             if (!event || event.target.id === 'property-modal') {
                 document.getElementById('property-modal').classList.remove('active');
             }
+        }
+
+        // マップマーカーの更新
+        async function updateMapMarkers(properties) {
+            if (!map) return;
+            
+            // 既存のマーカーをクリア
+            clearMarkers();
+            
+            // 各物件にマーカーを配置
+            for (const property of properties) {
+                await addPropertyMarker(property);
+            }
+            
+            // マーカーが配置されたら地図の表示範囲を調整
+            if (markers.length > 0) {
+                fitMapToMarkers();
+            }
+        }
+
+        // マーカーをクリア
+        function clearMarkers() {
+            markers.forEach(marker => marker.setMap(null));
+            markers = [];
+            infoWindows.forEach(infoWindow => infoWindow.close());
+            infoWindows = [];
+        }
+
+        // 物件のマーカーを追加
+        async function addPropertyMarker(property) {
+            // 住所を作成
+            const address = `${property.prefecture || ''}${property.city || ''}${property.address || ''}`;
+            
+            if (!address.trim()) {
+                console.log('住所がない物件:', property.id);
+                return;
+            }
+            
+            try {
+                // 住所から座標を取得
+                const location = await geocodeAddress(address);
+                
+                if (location) {
+                    // マーカーを作成
+                    const marker = new google.maps.Marker({
+                        position: location,
+                        map: map,
+                        title: property.property_name || '物件名未設定',
+                        animation: google.maps.Animation.DROP
+                    });
+                    
+                    // 情報ウィンドウを作成
+                    const infoWindow = createInfoWindow(property);
+                    
+                    // マーカークリックで情報ウィンドウを表示
+                    marker.addListener('click', () => {
+                        // 他の情報ウィンドウを閉じる
+                        infoWindows.forEach(iw => iw.close());
+                        infoWindow.open(map, marker);
+                    });
+                    
+                    markers.push(marker);
+                    infoWindows.push(infoWindow);
+                }
+            } catch (error) {
+                console.error('ジオコーディングエラー:', error, property.id);
+            }
+        }
+
+        // 住所から座標を取得
+        function geocodeAddress(address) {
+            return new Promise((resolve, reject) => {
+                geocoder.geocode({ address: address, region: 'JP' }, (results, status) => {
+                    if (status === 'OK' && results[0]) {
+                        resolve(results[0].geometry.location);
+                    } else {
+                        resolve(null);
+                    }
+                });
+            });
+        }
+
+        // 情報ウィンドウを作成
+        function createInfoWindow(property) {
+            const price = property.price ? `${Number(property.price).toLocaleString()}万円` : '価格応談';
+            const yield_rate = property.current_profit ? `${property.current_profit}%` : '-';
+            const address = property.prefecture || property.city 
+                ? `${property.prefecture || ''}${property.city || ''}` 
+                : '住所非公開';
+            
+            const contentString = `
+                <div class="map-info-window">
+                    <div class="map-info-title">${property.property_name || '物件名未設定'}</div>
+                    <div class="map-info-price">${price}</div>
+                    <div class="map-info-detail">📍 ${address}</div>
+                    <div class="map-info-detail">利回り: ${yield_rate}</div>
+                    <div class="map-info-detail">取引形態: ${property.transaction_category || '-'}</div>
+                    <button class="map-info-btn" onclick="showPropertyDetail(${property.id})">詳細を見る</button>
+                </div>
+            `;
+            
+            return new google.maps.InfoWindow({
+                content: contentString
+            });
+        }
+
+        // マーカーに合わせて地図の表示範囲を調整
+        function fitMapToMarkers() {
+            if (markers.length === 0) return;
+            
+            const bounds = new google.maps.LatLngBounds();
+            markers.forEach(marker => {
+                bounds.extend(marker.getPosition());
+            });
+            
+            map.fitBounds(bounds);
+            
+            // ズームレベルが大きすぎる場合は調整
+            const listener = google.maps.event.addListenerOnce(map, 'bounds_changed', () => {
+                if (map.getZoom() > 16) {
+                    map.setZoom(16);
+                }
+            });
         }
 
         // 検索リセット
